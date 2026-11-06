@@ -42,7 +42,7 @@ Read [`notebooks/README.md`](notebooks/README.md) before running the notebook.
 ```
 
 ## Working agreement for real-time grading
-
+pene
 - Make one focused commit per meaningful change.
 - Use a descriptive branch for substantial work, for example
   `activity-02-pokemon-analysis`.
