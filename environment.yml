@@ -1,0 +1,10 @@
+name: ti2006b-workbench
+channels:
+  - defaults
+dependencies:
+  - python=3.12
+  - pandas
+  - jupyter
+  - matplotlib
+  - ipykernel
+prefix: /opt/conda/envs/ti2006b-workbench
