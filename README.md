@@ -1,65 +1,32 @@
-# TI2006B persistent project repository
+# Reto-FEMSA-Agua
 
-License: Original educational content in this example repository is licensed
-under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-Code, third-party datasets, APIs, trademarks, and quoted material retain their
-own licenses and terms.
+Auditoría de descargas de agua por planta (enero-octubre 2026): conciliación entre la bitácora de las plantas y Reporting Factory, con KPIs y semáforo de cumplimiento para Auditoría Interna.
 
-Version: `v1.0`  
-Status: `example`
+## Código (etapa 2 — SQL/SQLite)
 
-This repository is the persistent home for the project used throughout the
-TI2006B workshop. Keep the repository public unless the instructor explicitly
-authorizes a private alternative. A public repository allows real-time review
-of commits, branches, notebooks, pull requests, and assignment evidence.
+Pipeline en capas bronce/plata/oro, construido sobre `sqlite3`:
 
-## First example: Pokémon analysis
+| Archivo | Capa | Qué hace |
+| --- | --- | --- |
+| `ingesta.py` | Bronce | Lee los Excel originales (bitácora + Reporting Factory) y los vuelca sin transformar a tablas `raw_*` en SQLite |
+| `exploracion.sql` | — | Perfilado y hallazgos (E1-E19): huecos, fórmulas rotas, negativos, picos, ceros, comparación bitácora vs RF |
+| `limpieza.sql` | Plata/Oro | Reglas R1-R9: catálogo de plantas, calendario real, interpolación de lecturas faltantes, volumen diario, detección de error de unidad en RF, KPIs y semáforo |
+| `resultados.sql` / `v1.sql` | Consumo | Consultas de resumen por planta, evolución mensual y validaciones de control |
+| `runsql.py` | Utilidad | Ejecuta cualquier `.sql` contra la base e imprime el resultado |
+| `modelo_estrella.sql` | Etapa 4 | Materializa el esquema en estrella de Etapa 3: `dim_tiempo_mes`, `dim_diagnostico` (dimensión basura) y `fact_conciliacion_mensual` (hecho limpio, solo llaves + métricas) |
+| `exportar_modelo_estrella.py` | Etapa 4 | Exporta las 4 tablas del esquema en estrella a un Excel para conectar Power BI sin driver ODBC |
 
-Start with [`notebooks/01-pokemon-go-analysis.ipynb`](notebooks/01-pokemon-go-analysis.ipynb).
-It downloads a small public Pokémon species/statistics dataset, creates a
-tidy analysis table, and produces interactive Plotly charts. The example is
-Pokémon GO-inspired, but it is not a dataset of player locations, accounts,
-captures, or Niantic telemetry.
+### Cómo correrlo
 
-Read [`notebooks/README.md`](notebooks/README.md) before running the notebook.
-
-## Persistent repository structure
-
-```text
-.
-├── .github/workflows/       # automated checks for every push and pull request
-├── data/
-│   ├── raw/                 # downloaded or source data; do not commit secrets
-│   ├── processed/           # reproducible derived data
-│   └── README.md            # data dictionary, provenance, and limitations
-├── notebooks/               # exploratory and teaching notebooks
-├── reports/                 # figures, summaries, and final reports
-├── src/                     # reusable Python code after notebooks stabilize
-├── assignments/             # later activity or assignment evidence
-├── requirements.txt         # pinned-enough teaching dependencies
-├── .gitignore
-└── README.md
-```
-
-## Working agreement for real-time grading
-pene
-- Make one focused commit per meaningful change.
-- Use a descriptive branch for substantial work, for example
-  `activity-02-pokemon-analysis`.
-- Keep notebooks runnable from the repository root.
-- Put explanations and data provenance in Markdown, not only in code.
-- Do not commit passwords, API keys, private student data, personal location
-  histories, or unlicensed company data.
-- Preserve the notebook outputs when they help a reviewer understand the work,
-  but do not treat a rendered chart as proof that the underlying data is valid.
-
-## Run locally
+Los Excel originales y la base generada (`femsa.db`) **no se suben al repo** por confidencialidad (ver `.gitignore`). Para reproducir:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-jupyter lab
+pip install openpyxl pandas
+python ingesta.py "Bitacora descargas 2026.xlsx" "ReportingFactory Ene26 - Oct26.xlsx" femsa.db
+python runsql.py femsa.db limpieza.sql
+python runsql.py femsa.db exploracion.sql
+python runsql.py femsa.db resultados.sql
+python runsql.py femsa.db v1.sql
+python runsql.py femsa.db modelo_estrella.sql
+python exportar_modelo_estrella.py
 ```
-
-The GitHub Actions workflow runs the notebook on pushes and pull requests.
